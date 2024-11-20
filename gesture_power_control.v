@@ -15,57 +15,57 @@ reg [31:0] countdown, countdown_next;
 
 parameter COUNTDOWN_TIME = 32'd500000000;    // 五秒倒计时
 
+// 时序逻辑：更新状态、倒计时和电源状态
 always @(posedge clk or posedge reset) begin
     if (reset) begin
-        current_state <= IDLE;
-        power_state <= 0;
-        countdown <= 0;
+        current_state <= IDLE;         // 初始状态
+        power_state <= 0;              // 初始电源关闭
+        countdown <= 0;                // 初始倒计时为 0
     end else begin
-        current_state <= next_state;
-        countdown <= countdown_next;
+        current_state <= next_state;   // 更新状态
+        countdown <= countdown_next;   // 更新倒计时
+        if (current_state == LEFT_WAIT && next_state == IDLE && right_key && countdown > 0) begin
+            power_state <= 1;          // 按右键开机
+        end else if (current_state == RIGHT_WAIT && next_state == IDLE && left_key && countdown > 0) begin
+            power_state <= 0;          // 按左键关机
+        end
     end
 end
 
+// 组合逻辑：计算下一个状态和倒计时值
 always @(*) begin
-    // 默认保持当前状态和倒计时值
-    next_state = current_state;
-    countdown_next = countdown;
+    next_state = current_state;       // 默认保持当前状态
+    countdown_next = countdown;       // 默认保持当前倒计时值
 
     case (current_state)
         IDLE: begin
             if (left_key && power_state == 0) begin
-                next_state = LEFT_WAIT;
+                next_state = LEFT_WAIT;         // 进入等待右键状态
                 countdown_next = COUNTDOWN_TIME; // 初始化倒计时
             end else if (right_key && power_state == 1) begin
-                next_state = RIGHT_WAIT;
+                next_state = RIGHT_WAIT;        // 进入等待左键状态
                 countdown_next = COUNTDOWN_TIME; // 初始化倒计时
             end
         end
 
         LEFT_WAIT: begin
-            if (right_key && countdown > 0) begin
-                next_state = IDLE;
-                power_state = 1; // 更新 power_state
-            end else if (countdown == 0) begin
-                next_state = IDLE; // 倒计时结束返回 IDLE
+            if (countdown > 0) begin
+                countdown_next = countdown - 1; // 倒计时递减
             end else begin
-                countdown_next = countdown - 1; // 倒计时减一
+                next_state = IDLE;              // 倒计时结束回到 IDLE
             end
         end
 
         RIGHT_WAIT: begin
-            if (left_key && countdown > 0) begin
-                next_state = IDLE;
-                power_state = 0; // 更新 power_state
-            end else if (countdown == 0) begin
-                next_state = IDLE; // 倒计时结束返回 IDLE
+            if (countdown > 0) begin
+                countdown_next = countdown - 1; // 倒计时递减
             end else begin
-                countdown_next = countdown - 1; // 倒计时减一
+                next_state = IDLE;              // 倒计时结束回到 IDLE
             end
         end
 
         default: begin
-            next_state = IDLE;
+            next_state = IDLE;                  // 默认回到 IDLE
             countdown_next = 0;
         end
     endcase
