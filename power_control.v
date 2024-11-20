@@ -5,6 +5,7 @@ module power_control (
     input long_press,
     output reg power_state
 );
+
 always @(posedge clk, posedge reset) begin
     if (reset) begin
         power_state <= 0;       //系统复位后默认关机
