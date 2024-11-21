@@ -10,8 +10,8 @@ reg key_prev;
 
 parameter LONG_PRESS_TIME = 32'd300000000;
 
-always @(posedge clk, posedge reset) begin
-    if (reset) begin
+always @(posedge clk, negedge reset) begin
+    if (!reset) begin
         press_count <= 0;
         short_press <= 0;
         long_press <= 0;

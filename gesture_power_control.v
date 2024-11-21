@@ -16,8 +16,8 @@ reg [31:0] countdown, countdown_next;
 parameter COUNTDOWN_TIME = 32'd500000000;    // 五秒倒计时
 
 // 时序逻辑：更新状态、倒计时和电源状态
-always @(posedge clk or posedge reset) begin
-    if (reset) begin
+always @(posedge clk or negedge reset) begin
+    if (!reset) begin
         current_state <= IDLE;         // 初始状态
         power_state <= 0;              // 初始电源关闭
         countdown <= 0;                // 初始倒计时为 0

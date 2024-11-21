@@ -6,8 +6,8 @@ module power_control (
     output reg power_state
 );
 
-always @(posedge clk, posedge reset) begin
-    if (reset) begin
+always @(posedge clk, negedge reset) begin
+    if (!reset) begin
         power_state <= 0;       //系统复位后默认关机
     end else begin
         case (power_state)
