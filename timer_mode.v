@@ -1,239 +1,171 @@
-module timer (
+module timer_mode (
     input clk,
     input reset,
     input power_state,
     input set_mode,
+    input set_select,          // 外部输入控制调整分钟或小时
     input increase_key,
-    output reg [7:0] hour_tub_control_1,
-    output reg [7:0] hour_tub_control_2,
-    output reg [7:0] minute_tub_control_1,
-    output reg [7:0] minute_tub_control_2,
-    output reg [7:0] second_tub_control_1,
-    output reg [7:0] second_tub_control_2
+    output reg [7:0] tub_segments_1,  // 输出当前段码
+    output reg [7:0] tub_segments_2,  // 输出当前段码
+    output reg [5:0] tub_select       // 位选信号，共6位数码管
 );
 
-    reg [4:0] hours;
-    reg [5:0] minutes;
-    reg [5:0] seconds;
-    reg set_select;            // 0: minute, 1: hour
-    reg inc_prev;              // 用于检测按键上升沿
-    reg [31:0] counter;        // 用于计时的分频计数器
+    reg [4:0] hours;           // 小时，0~23
+    reg [5:0] minutes;         // 分钟，0~59
+    reg [5:0] seconds;         // 秒，0~59
+    reg inc_prev;              // 按键前一状态
+    reg [31:0] counter;        // 1Hz分频计数器
+    reg [15:0] scan_counter;   // 动态扫描分频计数器
+    reg [2:0] scan_index;      // 动态扫描索引
+    reg lock_key;              // 按键锁存信号
 
-    parameter ONE_SECOND = 32'b100000000; // 假设100MHz时钟，需要分频到1Hz
+    parameter ONE_SECOND = 32'd100000000; // 假设输入时钟为100MHz
+    parameter SCAN_DELAY = 16'd20000;     // 降低动态扫描频率（增加延迟）
 
     // 数码管段码查找表
     reg [7:0] segment_lut [0:9];
     initial begin
-        segment_lut[0] = 8'b11000000; // 数字 0
-        segment_lut[1] = 8'b11111001; // 数字 1
-        segment_lut[2] = 8'b10100100; // 数字 2
-        segment_lut[3] = 8'b10110000; // 数字 3
-        segment_lut[4] = 8'b10011001; // 数字 4
-        segment_lut[5] = 8'b10010010; // 数字 5
-        segment_lut[6] = 8'b10000010; // 数字 6
-        segment_lut[7] = 8'b11111000; // 数字 7
-        segment_lut[8] = 8'b10000000; // 数字 8
-        segment_lut[9] = 8'b10010000; // 数字 9
+        segment_lut[0] = 8'b1111_1100; // 数字 0
+        segment_lut[1] = 8'b0110_0000; // 数字 1
+        segment_lut[2] = 8'b1101_1010; // 数字 2
+        segment_lut[3] = 8'b1111_0010; // 数字 3
+        segment_lut[4] = 8'b0110_0110; // 数字 4
+        segment_lut[5] = 8'b1011_0110; // 数字 5
+        segment_lut[6] = 8'b1011_1110; // 数字 6
+        segment_lut[7] = 8'b1110_0000; // 数字 7
+        segment_lut[8] = 8'b1111_1110; // 数字 8
+        segment_lut[9] = 8'b1110_0110; // 数字 9
     end
 
     // 初始化信号
     initial begin
-        hours = 0;
-        minutes = 0;
-        seconds = 0;
-        set_select = 0;
-        inc_prev = 0;
-        counter = 0;
+        hours <= 0;
+        minutes <= 0;
+        seconds <= 0;
+        counter <= 0;
+        scan_index <= 0;
+        tub_segments_1 <= 8'b00000000;
+        tub_segments_2 <= 8'b00000000;
+        tub_select <= 6'b000000;
+        inc_prev <= 0;
+        lock_key <= 0;
     end
 
-    // 时间计时逻辑
+    // 按键去抖逻辑
+    reg [15:0] debounce_counter;
+    reg stable_key;
+
     always @(posedge clk or negedge reset) begin
         if (!reset) begin
+            debounce_counter <= 0;
+            stable_key <= 0;
+        end else if (increase_key) begin
+            if (debounce_counter < 16'd10000) begin // 调整去抖计数
+                debounce_counter <= debounce_counter + 1;
+            end else begin
+                stable_key <= 1; // 按键稳定后置位
+            end
+        end else begin
+            debounce_counter <= 0;
+            stable_key <= 0;
+        end
+    end
+
+    // 时间计时和设置逻辑
+    always @(posedge clk or negedge reset or negedge power_state) begin
+        if (!reset || !power_state) begin
+            // 当复位或关机时，清空状态
             hours <= 0;
             minutes <= 0;
             seconds <= 0;
             counter <= 0;
-            set_select <=0;
-        end else if (power_state && !set_mode) begin
-            counter <= counter + 1;
-            if (counter >= ONE_SECOND) begin
-                counter <= 0;
-                seconds <= seconds + 1;
-                if (seconds == 59) begin
-                    seconds <= 0;
-                    minutes <= minutes + 1; // 唯一控制 minutes
-                    if (minutes == 59) begin
-                        minutes <= 0;
-                        hours <= hours + 1;
-                        if (hours == 23) begin
-                            hours <= 0;
+            inc_prev <= 0;
+            lock_key <= 0; // 按键解锁
+        end else if (power_state) begin
+            if (set_mode) begin
+                // 设置模式
+                if (stable_key && !lock_key) begin
+                    case (set_select)
+                        0: minutes <= (minutes + 1) % 60; // 调分钟
+                        1: hours <= (hours + 1) % 24;    // 调小时
+                    endcase
+                    lock_key <= 1; // 按键按下后锁定
+                end
+                if (!stable_key) begin
+                    lock_key <= 0; // 按键释放后解锁
+                end
+                inc_prev <= stable_key; // 更新按键状态
+            end else begin
+                // 正常计时模式
+                counter <= counter + 1;
+                if (counter >= ONE_SECOND) begin
+                    counter <= 0;
+                    seconds <= seconds + 1;
+                    if (seconds == 59) begin
+                        seconds <= 0;
+                        minutes <= minutes + 1;
+                        if (minutes == 59) begin
+                            minutes <= 0;
+                            hours <= hours + 1;
+                            if (hours == 23) begin
+                                hours <= 0;
+                            end
                         end
                     end
                 end
+                inc_prev <= 0; // 清除按键状态
+                lock_key <= 0; // 清除锁存状态
             end
-        end else if (power_state && set_mode) begin
-            set_select <= (set_select+1)%2;
-            if (increase_key && !inc_prev) begin
-                case (set_select) 
-                    0: minutes <= (minutes + 1) % 60; // 唯一控制 minutes
-                    1: hours <= (hours + 1) % 24;    // 唯一控制 hours
-                endcase
-            end
-            inc_prev <= increase_key; // 更新按键状态
         end
     end
 
-    // 时间设置逻辑
-    // always @(posedge clk or negedge reset) begin
-    //     if (!reset) begin
-    //         set_select <= 0;
-    //     end else if (set_mode) begin
-    //         if (increase_key && !inc_prev) begin
-    //             case (set_select) 
-    //                 0: minutes <= (minutes + 1) % 60; // 唯一控制 minutes
-    //                 1: hours <= (hours + 1) % 24;    // 唯一控制 hours
-    //             endcase
-    //         end
-    //         inc_prev <= increase_key; // 更新按键状态
-    //     end
-    // end
-
-    // 数码管段码赋值逻辑
+    // 动态扫描逻辑
     always @(posedge clk or negedge reset) begin
         if (!reset) begin
-            hour_tub_control_1 <= 8'b00000000;
-            hour_tub_control_2 <= 8'b00000000;
-            minute_tub_control_1 <= 8'b00000000;
-            minute_tub_control_2 <= 8'b00000000;
-            second_tub_control_1 <= 8'b00000000;
-            second_tub_control_2 <= 8'b00000000;
+            scan_counter <= 0;
+            scan_index <= 0;
+            tub_segments_1 <= 8'b00000000;
+            tub_segments_2 <= 8'b00000000;
+            tub_select <= 6'b000000;
         end else begin
-            hour_tub_control_1 <= segment_lut[hours / 10];   // 小时十位
-            hour_tub_control_2 <= segment_lut[hours % 10];   // 小时个位
-            minute_tub_control_1 <= segment_lut[minutes / 10]; // 分钟十位
-            minute_tub_control_2 <= segment_lut[minutes % 10]; // 分钟个位
-            second_tub_control_1 <= segment_lut[seconds / 10]; // 秒十位
-            second_tub_control_2 <= segment_lut[seconds % 10]; // 秒个位
+            scan_counter <= scan_counter + 1;
+            if (scan_counter >= SCAN_DELAY) begin
+                scan_counter <= 0;
+
+                // 清除上一段信号，防止残影
+                tub_segments_1 <= 8'b00000000;
+                tub_segments_2 <= 8'b00000000;
+                tub_select <= 6'b000000;
+                
+                scan_index <= (scan_index + 1) % 6;
+                case (scan_index)
+                    0: begin
+                        tub_segments_1 <= segment_lut[hours / 10];  // 小时十位
+                        tub_select <= 6'b100000;
+                    end
+                    1: begin
+                        tub_segments_1 <= segment_lut[hours % 10];  // 小时个位
+                        tub_select <= 6'b010000;
+                    end
+                    2: begin
+                        tub_segments_1 <= segment_lut[minutes / 10]; // 分钟十位
+                        tub_select <= 6'b001000;
+                    end
+                    3: begin
+                        tub_segments_1 <= segment_lut[minutes % 10]; // 分钟个位
+                        tub_select <= 6'b000100;
+                    end
+                    4: begin
+                        tub_segments_2 <= segment_lut[seconds / 10]; // 秒十位
+                        tub_select <= 6'b000010;
+                    end
+                    5: begin
+                        tub_segments_2 <= segment_lut[seconds % 10]; // 秒个位
+                        tub_select <= 6'b000001;
+                    end
+                endcase
+            end
         end
     end
 
 endmodule
-
-
-
-// module timer_mode (
-//     input clk,
-//     input reset,
-//     input power_state,
-//     input set_mode,
-//     input increase_key,
-//     output reg [7:0] hour_tub_control_1,
-//     output reg [7:0] hour_tub_control_2,
-//     output reg [7:0] minute_tub_control_1,
-//     output reg [7:0] minute_tub_control_2,
-//     output reg [7:0] second_tub_control_1,
-//     output reg [7:0] second_tub_control_2,
-// );
-
-// reg [4:0] hours;
-// reg [5:0] minutes,seconds;
-// reg set_select;         // 0: minute, 1: hour
-// reg inc_prev;                 // 记录按键状态，用于检测上升沿
-// reg [31:0] counter;
-
-// parameter ONE_SECOND = 32'b100000000;
-
-
-// reg [7:0] segment_lut [0:9];
-// initial begin
-//     segment_lut[0] = 8'b11111100;
-//     segment_lut[1] = 8'b01100000;
-//     segment_lut[2] = 8'b11011010;
-//     segment_lut[3] = 8'b11110010;
-//     segment_lut[4] = 8'b01100110;
-//     segment_lut[5] = 8'b10110110;
-//     segment_lut[6] = 8'b10111110;
-//     segment_lut[7] = 8'b11100000;
-//     segment_lut[8] = 8'b11111110;
-//     segment_lut[9] = 8'b11100110;
-// end
-
-// initial begin
-//     hours = 0;
-//     minutes = 0;
-//     seconds = 0;
-//     set_select = 0;
-//     inc_prev = 0;
-//     counter = 0;
-// end
-
-// always @(posedge clk,negedge reset) begin
-//     if (!reset) begin
-//         hours <= 0;
-//         minutes <= 0;
-//         seconds <= 0;
-//         counter <=0;
-//     end else if (power_state && !set_mode) begin
-//         counter <= counter +1;
-//         if (counter==ONE_SECOND) begin
-//             seconds<= seconds+1;
-//             if (seconds == 59) begin
-//                 seconds <= 0;
-//                 minutes <= minutes + 1;
-//                 if (minutes == 59) begin
-//                     minutes <= 0;
-//                     hours <= hours + 1;
-//                     if (hours == 23) begin
-//                         hours <= 0;
-//                     end
-//                 end
-//             end
-//         end 
-//     end
-// end
-
-// always @(posedge clk,negedge reset) begin
-//     if (!reset) begin
-//         set_select <= 0;
-//     end else if (set_mode) begin
-//         if (increase_key && !inc_prev) begin
-//             case (set_select) 
-//                 0:begin
-//                     minutes <= (minutes + 1)%60;
-//                 end
-//                 1:begin
-//                     hours <= (hours + 1)%24;
-//                 end
-//             endcase
-//         end
-//     end
-//     inc_prev <= increase_key;
-// end
-
-// always @(posedge clk,negedge reset) begin
-//     if (!reset) begin
-//         set_select <= 0;
-//     end else if (set_mode) begin
-//         set_select <= (set_select + 1)%2;
-//     end
-// end
-
-// always @(posedge clk,negedge reset) begin
-//     if (!reset) begin
-//         hour_tub_control_1 <= 8'b00000000;
-//         minute_tub_control_1 <= 8'b00000000;
-//         second_tub_control_1 <= 8'b00000000;
-//         hour_tub_control_2 <= 8'b00000000;
-//         minute_tub_control_2 <= 8'b00000000;
-//         second_tub_control_2 <= 8'b00000000;
-//     end else begin
-//         hour_tub_control_1 <= segment_lut[hours/10];
-//         hour_tub_control_2 <= segment_lut[hours%10];
-//         minute_tub_control_1 <= segment_lut[minutes/10];
-//         minute_tub_control_2 <= segment_lut[minutes%10];
-//         second_tub_control_1 <= segment_lut[seconds/10];
-//         second_tub_control_2 <= segment_lut[seconds%10];
-//     end
-// end
-
-// endmodule
