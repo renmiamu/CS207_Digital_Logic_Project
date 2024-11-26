@@ -24,11 +24,6 @@ always @(posedge clk or negedge reset) begin
     end else begin
         current_state <= next_state;   // 更新状态
         countdown <= countdown_next;   // 更新倒计时
-        if (current_state == LEFT_WAIT && next_state == IDLE && right_key && countdown > 0) begin
-            power_state <= 1;          // 按右键开机
-        end else if (current_state == RIGHT_WAIT && next_state == IDLE && left_key && countdown > 0) begin
-            power_state <= 0;          // 按左键关机
-        end
     end
 end
 
@@ -54,6 +49,9 @@ always @(*) begin
             end else begin
                 next_state = IDLE;              // 倒计时结束回到 IDLE
             end
+            if (countdown > 0 && right_key) begin
+                power_state = 1;               // 按右键开机
+            end
         end
 
         RIGHT_WAIT: begin
@@ -61,6 +59,9 @@ always @(*) begin
                 countdown_next = countdown - 1; // 倒计时递减
             end else begin
                 next_state = IDLE;              // 倒计时结束回到 IDLE
+            end
+            if (countdown > 0 && left_key) begin
+                power_state = 0;               // 按左键关机
             end
         end
 
