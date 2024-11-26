@@ -1,32 +1,12 @@
-`timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 2024/11/20 19:19:31
-// Design Name: 
-// Module Name: mode_change
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
-
 module mode_change(
     input clk,             // 时钟信号
     input reset,           // 复位信号
     input menu_btn,        // 菜单键输入
     input [2:0] speed_btn, // 速度按键输入 (000:无输入, 001:1档, 010:2档, 100:3档)
     input clean_btn,       // 自清洁按键输入
-    output reg [2:0] mode, // 模式输出 (000:待机, 001:1档, 010:2档, 011:3档, 100:自清洁)
-    output reg countdown   // 倒计时输出（1为倒计时中，0为不倒计时）
+    output reg [2:0] mode, // 模式输出 (000:待机, 001:1档, 010:2档, 100:3档, 111:自清洁)
+    output reg countdown,   // 倒计时输出（1为倒计时中，0为不倒计时）
+    output reg cleaning_reminder // 自清洁提醒信号
 );
 
     // 状态定义
@@ -47,6 +27,22 @@ module mode_change(
     reg menu_btn_sync_0, menu_btn_sync_1;
     reg [19:0] debounce_counter; // 20-bit计数器用于消抖
     reg menu_btn_stable;
+
+    // 累计工作时长
+    reg [4:0] hours;
+    reg [5:0] minutes;
+    reg [5:0] seconds;
+    reg [31:0] counter;        // 1Hz分频计数器
+
+    parameter ONE_SECOND = 32'd100000000; // 假设输入时钟为100MHz
+
+     // 初始化计时信号
+    initial begin
+        hours <= 0;
+        minutes <= 0;
+        seconds <= 0;
+        counter <= 0;
+    end
 
     // 按键消抖逻辑
     always @(posedge clk or negedge reset) begin
@@ -196,6 +192,46 @@ module mode_change(
             countdown = 1;  // 倒计时中
         else
             countdown = 0;  // 不倒计时
+    end
+
+    always @(posedge clk or negedge reset) begin
+        if (!reset|| clean_btn) begin
+            // 复位时或开始自清洁时，清空状态
+            hours <= 0;
+            minutes <= 0;
+            seconds <= 0;
+            counter <= 0;
+        end else if (current_state == SUCTION_1 || current_state == SUCTION_2 || current_state == SUCTION_3) begin
+            // 累计工作时长
+            counter <= counter + 1;
+            if (counter >= ONE_SECOND) begin
+                counter <= 0;
+                seconds <= seconds + 1;
+                if (seconds == 59) begin
+                    seconds <= 0;
+                    minutes <= minutes + 1;
+                    if (minutes == 59) begin
+                        minutes <= 0;
+                        hours <= hours + 1;
+                        if (hours == 23) begin
+                            hours <= 0;
+                        end
+                    end
+                end
+            end        
+        end else if (current_state == CLEANING) begin
+            // 自清洁模式，清空工作时长
+            hours <= 0;
+            minutes <= 0;
+            seconds <= 0;
+            counter <= 0;
+            cleaning_reminder <= 0; // 已开启自清洁，清空提醒信号
+
+        end else if (current_state == STANDBY) begin
+            if (hours >= 10) begin
+                cleaning_reminder <= 1; // 工作时间累计10小时，提醒自清洁
+            end
+        end   
     end
 
 endmodule
