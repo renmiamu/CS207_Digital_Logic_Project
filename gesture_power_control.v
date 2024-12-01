@@ -13,61 +13,94 @@ parameter RIGHT_WAIT = 2'b10;
 reg [1:0] current_state, next_state;
 reg [31:0] countdown, countdown_next;
 
-parameter COUNTDOWN_TIME = 32'd500000000;    // 五秒倒计时
+parameter COUNTDOWN_TIME = 32'd500000000; // 5-second countdown
 
-// 时序逻辑：更新状态、倒计时和电源状态
+// 标志位，用于控制每个按键响应一次
+reg left_key_pressed, right_key_pressed;
+
 always @(posedge clk or negedge reset) begin
     if (!reset) begin
-        current_state <= IDLE;         // 初始状态
-        power_state <= 0;              // 初始电源关闭
-        countdown <= 0;                // 初始倒计时为 0
+        current_state <= IDLE;         // Initial state
+        power_state <= 0;              // Initial power off
+        countdown <= 0;                // Initial countdown
+        left_key_pressed <= 0;         // Initial state of left key pressed flag
+        right_key_pressed <= 0;        // Initial state of right key pressed flag
     end else begin
-        current_state <= next_state;   // 更新状态
-        countdown <= countdown_next;   // 更新倒计时
+        current_state <= next_state;   // Update state
+        countdown <= countdown_next;   // Update countdown
+        left_key_pressed <= (left_key && !left_key_pressed); // Left key press detection
+        right_key_pressed <= (right_key && !right_key_pressed); // Right key press detection
+        
+        // Power state update in sequential logic
+        case (next_state)
+            LEFT_WAIT: begin
+                if (countdown > 0 && right_key_pressed) begin
+                    power_state <= 1;  // Power on if in LEFT_WAIT and right key is pressed
+                end
+            end
+            RIGHT_WAIT: begin
+                if (countdown > 0 && left_key_pressed) begin
+                    power_state <= 0;  // Power off if in RIGHT_WAIT and left key is pressed
+                end
+            end
+            default: begin
+                power_state <= power_state; // Maintain previous state if not in LEFT_WAIT or RIGHT_WAIT
+            end
+        endcase
     end
 end
 
-// 组合逻辑：计算下一个状态和倒计时值
+// Combinatorial logic: Calculate the next state and countdown value
 always @(*) begin
-    next_state = current_state;       // 默认保持当前状态
-    countdown_next = countdown;       // 默认保持当前倒计时值
+    next_state = current_state;      // Default to hold the current state
+    countdown_next = countdown;      // Default to hold the current countdown value
 
     case (current_state)
         IDLE: begin
-            if (left_key && power_state == 0) begin
-                next_state = LEFT_WAIT;         // 进入等待右键状态
-                countdown_next = COUNTDOWN_TIME; // 初始化倒计时
-            end else if (right_key && power_state == 1) begin
-                next_state = RIGHT_WAIT;        // 进入等待左键状态
-                countdown_next = COUNTDOWN_TIME; // 初始化倒计时
+            if (left_key && !left_key_pressed && power_state == 0) begin
+                next_state = LEFT_WAIT;          // Enter waiting state for right key
+                countdown_next = COUNTDOWN_TIME; // Initialize countdown
+                left_key_pressed = 1;            // Set left key pressed flag
+            end else if (right_key && !right_key_pressed && power_state == 1) begin
+                next_state = RIGHT_WAIT;         // Enter waiting state for left key
+                countdown_next = COUNTDOWN_TIME; // Initialize countdown
+                right_key_pressed = 1;           // Set right key pressed flag
             end
         end
 
         LEFT_WAIT: begin
             if (countdown > 0) begin
-                countdown_next = countdown - 1; // 倒计时递减
+                countdown_next = countdown - 1; // Countdown decrement
             end else begin
-                next_state = IDLE;              // 倒计时结束回到 IDLE
+                next_state = IDLE;               // Countdown ends, go to IDLE
+                countdown_next = 0;              // Reset countdown
+                left_key_pressed = 0;            // Reset left key flag
             end
-            if (countdown > 0 && right_key) begin
-                power_state = 1;               // 按右键开机
+            if(power_state == 1)begin
+                next_state = IDLE;               // Countdown ends, go to IDLE
+                countdown_next = 0;
+                left_key_pressed = 0;            // Reset left key flag
             end
         end
 
         RIGHT_WAIT: begin
             if (countdown > 0) begin
-                countdown_next = countdown - 1; // 倒计时递减
+                countdown_next = countdown - 1; // Countdown decrement
             end else begin
-                next_state = IDLE;              // 倒计时结束回到 IDLE
+                next_state = IDLE;               // Countdown ends, go to IDLE
+                countdown_next = 0;              // Reset countdown
+                right_key_pressed = 0;           // Reset right key flag
             end
-            if (countdown > 0 && left_key) begin
-                power_state = 0;               // 按左键关机
+            if(power_state == 0)begin
+                next_state = IDLE;               // Countdown ends, go to IDLE
+                countdown_next = 0;
+                right_key_pressed = 0;           // Reset right key flag
             end
         end
 
         default: begin
-            next_state = IDLE;                  // 默认回到 IDLE
-            countdown_next = 0;
+            next_state = IDLE;                  // Default to IDLE
+            countdown_next = 0;                  // Reset countdown
         end
     endcase
 end
