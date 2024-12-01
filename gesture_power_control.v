@@ -15,31 +15,24 @@ reg [31:0] countdown, countdown_next;
 
 parameter COUNTDOWN_TIME = 32'd500000000; // 5-second countdown
 
-// 标志位，用于控制每个按键响应一次
-reg left_key_pressed, right_key_pressed;
-
+// Sequential logic: Update state, countdown, and power state
 always @(posedge clk or negedge reset) begin
     if (!reset) begin
         current_state <= IDLE;         // Initial state
         power_state <= 0;              // Initial power off
         countdown <= 0;                // Initial countdown
-        left_key_pressed <= 0;         // Initial state of left key pressed flag
-        right_key_pressed <= 0;        // Initial state of right key pressed flag
     end else begin
         current_state <= next_state;   // Update state
-        countdown <= countdown_next;   // Update countdown
-        left_key_pressed <= (left_key && !left_key_pressed); // Left key press detection
-        right_key_pressed <= (right_key && !right_key_pressed); // Right key press detection
-        
+        countdown <= countdown_next;    // Update countdown
         // Power state update in sequential logic
         case (next_state)
             LEFT_WAIT: begin
-                if (countdown > 0 && right_key_pressed) begin
+                if (countdown > 0 && right_key) begin
                     power_state <= 1;  // Power on if in LEFT_WAIT and right key is pressed
                 end
             end
             RIGHT_WAIT: begin
-                if (countdown > 0 && left_key_pressed) begin
+                if (countdown > 0 && left_key) begin
                     power_state <= 0;  // Power off if in RIGHT_WAIT and left key is pressed
                 end
             end
@@ -53,18 +46,16 @@ end
 // Combinatorial logic: Calculate the next state and countdown value
 always @(*) begin
     next_state = current_state;      // Default to hold the current state
-    countdown_next = countdown;      // Default to hold the current countdown value
+    countdown_next = countdown;       // Default to hold the current countdown value
 
     case (current_state)
         IDLE: begin
-            if (left_key && !left_key_pressed && power_state == 0) begin
+            if (left_key && power_state == 0) begin
                 next_state = LEFT_WAIT;          // Enter waiting state for right key
                 countdown_next = COUNTDOWN_TIME; // Initialize countdown
-                left_key_pressed = 1;            // Set left key pressed flag
-            end else if (right_key && !right_key_pressed && power_state == 1) begin
+            end else if (right_key && power_state == 1) begin
                 next_state = RIGHT_WAIT;         // Enter waiting state for left key
                 countdown_next = COUNTDOWN_TIME; // Initialize countdown
-                right_key_pressed = 1;           // Set right key pressed flag
             end
         end
 
@@ -74,13 +65,11 @@ always @(*) begin
             end else begin
                 next_state = IDLE;               // Countdown ends, go to IDLE
                 countdown_next = 0;              // Reset countdown
-                left_key_pressed = 0;            // Reset left key flag
             end
             if(power_state == 1)begin
                 next_state = IDLE;               // Countdown ends, go to IDLE
                 countdown_next = 0;
-                left_key_pressed = 0;            // Reset left key flag
-            end
+             end
         end
 
         RIGHT_WAIT: begin
@@ -89,13 +78,11 @@ always @(*) begin
             end else begin
                 next_state = IDLE;               // Countdown ends, go to IDLE
                 countdown_next = 0;              // Reset countdown
-                right_key_pressed = 0;           // Reset right key flag
             end
             if(power_state == 0)begin
-                next_state = IDLE;               // Countdown ends, go to IDLE
-                countdown_next = 0;
-                right_key_pressed = 0;           // Reset right key flag
-            end
+                            next_state = IDLE;               // Countdown ends, go to IDLE
+                            countdown_next = 0;
+                         end
         end
 
         default: begin
