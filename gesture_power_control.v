@@ -3,6 +3,7 @@ module gesture_power_control (
     input reset,
     input left_key,
     input right_key,
+    input [1:0] time_select,
     output reg power_state
 );
 
@@ -12,8 +13,14 @@ parameter RIGHT_WAIT = 2'b10;
 
 reg [1:0] current_state, next_state;
 reg [31:0] countdown, countdown_next;
+wire [31:0] COUNTDOWN_TIME;
 
-parameter COUNTDOWN_TIME = 32'd500000000; // 5-second countdown
+gesture_power_control_timer time_control (
+    .clk(clk),
+    .reset(reset),
+    .time_select(time_select),
+    .countdown_time(COUNTDOWN_TIME)
+);
 
 // Sequential logic: Update state, countdown, and power state
 always @(posedge clk or negedge reset) begin
@@ -52,7 +59,7 @@ always @(*) begin
         IDLE: begin
             if (left_key && power_state == 0) begin
                 next_state = LEFT_WAIT;          // Enter waiting state for right key
-                countdown_next = COUNTDOWN_TIME; // Initialize countdown
+                countdown_next = COUNTDOWN_TIME; // Initialize countdown  
             end else if (right_key && power_state == 1) begin
                 next_state = RIGHT_WAIT;         // Enter waiting state for left key
                 countdown_next = COUNTDOWN_TIME; // Initialize countdown
@@ -69,7 +76,7 @@ always @(*) begin
             if(power_state == 1)begin
                 next_state = IDLE;               // Countdown ends, go to IDLE
                 countdown_next = 0;
-             end
+            end
         end
 
         RIGHT_WAIT: begin
@@ -80,9 +87,9 @@ always @(*) begin
                 countdown_next = 0;              // Reset countdown
             end
             if(power_state == 0)begin
-                            next_state = IDLE;               // Countdown ends, go to IDLE
-                            countdown_next = 0;
-                         end
+                next_state = IDLE;               // Countdown ends, go to IDLE
+                countdown_next = 0;
+            end
         end
 
         default: begin
