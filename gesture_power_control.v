@@ -4,7 +4,9 @@ module gesture_power_control (
     input left_key,
     input right_key,
     input [1:0] time_select,
-    output reg power_state
+    output reg power_state,
+    output reg [7:0] tub_segments_gesture_time,
+    output reg tub_select_gesture_time
 );
 
 parameter IDLE = 2'b00;
@@ -19,7 +21,9 @@ gesture_power_control_timer time_control (
     .clk(clk),
     .reset(reset),
     .time_select(time_select),
-    .countdown_time(COUNTDOWN_TIME)
+    .countdown_time(COUNTDOWN_TIME),
+    .tub_segments_gesture_time(tub_segments_gesture_time),
+    .tub_select_gesture_time(tub_select_gesture_time)
 );
 
 // Sequential logic: Update state, countdown, and power state
