@@ -4,9 +4,16 @@ module mode_change(
     input menu_btn,        // 菜单键输入
     input [2:0] speed_btn, // 速度按键输入 (000:无输入, 001:1档, 010:2档, 100:3档)
     input clean_btn,       // 自清洁按键输入
+    input set_mode,        // 是否调整remind_time
+    input display_mode,    // 是否显示累计工作时间
+    input set_select,      // 外部输入控制调整分钟或小时
+    input increase_key,
     output reg [2:0] mode, // 模式输出 (000:待机, 001:1档, 010:2档, 100:3档, 111:自清洁)
     output reg countdown,   // 倒计时输出（1为倒计时中，0为不倒计时）
-    output reg cleaning_reminder // 自清洁提醒信号
+    output reg cleaning_reminder, // 自清洁提醒信号
+    output reg [7:0] tub_segments_1,  // 输出当前段码
+    output reg [7:0] tub_segments_2,  // 输出当前段码
+    output reg [7:0] tub_select      // 位选信号，共6位数码管
 );
 
     // 状态定义
@@ -18,6 +25,8 @@ module mode_change(
     parameter CLEANING = 3'b111;         // 自清洁模式
     parameter SUCTION_3_TIMER = 3'b101;  // 抽油烟3档倒计时模式
     parameter RETURN_TO_STANDBY = 3'b110; // 返回待机的倒计时模式
+    parameter SCAN_DELAY = 16'd20000;     // 降低动态扫描频率（增加延迟）
+
 
     reg [2:0] current_state, next_state;
     reg [31:0] timer; // 倒计时计时器
@@ -28,13 +37,35 @@ module mode_change(
     reg [19:0] debounce_counter; // 20-bit计数器用于消抖
     reg menu_btn_stable;
 
+    reg [15:0] scan_counter;   // 动态扫描分频计数器
+    reg [2:0] scan_index;      // 动态扫描索引
+
     // 累计工作时长
     reg [4:0] hours;
     reg [5:0] minutes;
     reg [5:0] seconds;
-    reg [31:0] counter;        // 1Hz分频计数器
+    reg [31:0] counter;
+
+    // 提醒时间
+    wire [4:0] remind_hours;
+    wire [5:0] remind_minutes;
 
     parameter ONE_SECOND = 32'd100000000; // 假设输入时钟为100MHz
+
+// 数码管段码查找表
+    reg [7:0] segment_lut [0:9];
+    initial begin
+        segment_lut[0] = 8'b1111_1100; // 数字 0
+        segment_lut[1] = 8'b0110_0000; // 数字 1
+        segment_lut[2] = 8'b1101_1010; // 数字 2
+        segment_lut[3] = 8'b1111_0010; // 数字 3
+        segment_lut[4] = 8'b0110_0110; // 数字 4
+        segment_lut[5] = 8'b1011_0110; // 数字 5
+        segment_lut[6] = 8'b1011_1110; // 数字 6
+        segment_lut[7] = 8'b1110_0000; // 数字 7
+        segment_lut[8] = 8'b1111_1110; // 数字 8
+        segment_lut[9] = 8'b1110_0110; // 数字 9
+    end
 
      // 初始化计时信号
     initial begin
@@ -42,6 +73,9 @@ module mode_change(
         minutes <= 0;
         seconds <= 0;
         counter <= 0;
+        tub_segments_1 <= 8'b00000000;
+        tub_segments_2 <= 8'b00000000;
+        tub_select <= 8'b00000000;
     end
 
     // 按键消抖逻辑
@@ -194,6 +228,7 @@ module mode_change(
             countdown = 0;  // 不倒计时
     end
 
+    // 工作时长计数器
     always @(posedge clk or negedge reset) begin
         if (!reset|| clean_btn) begin
             // 复位时或开始自清洁时，清空状态
@@ -228,10 +263,98 @@ module mode_change(
             cleaning_reminder <= 0; // 已开启自清洁，清空提醒信号
 
         end else if (current_state == STANDBY) begin
-            if (hours >= 10) begin
-                cleaning_reminder <= 1; // 工作时间累计10小时，提醒自清洁
+            if (hours >= remind_hours && minutes >= remind_minutes) begin
+                cleaning_reminder <= 1; // 默认工作时间累计10小时，提醒自清洁
             end
-        end   
+        end else if(current_state != STANDBY) begin
+            cleaning_reminder <= 0;
+            end  
+    end
+
+    //设置提醒时间
+    timer_setter remind_setter(
+       .clk(clk),
+       .reset(reset),
+       .hours(remind_hours),
+       .minutes(remind_minutes),
+       .set_mode(set_mode),
+       .set_select(set_select),
+       .increase_key(increase_key),
+       .visible(~display_mode)      // 外部输入控制数码管显示
+    );
+
+    // 时间显示逻辑
+    always @(posedge clk or negedge reset) begin
+        if (!reset) begin
+            scan_counter <= 0;
+            scan_index <= 0;
+            tub_segments_1 <= 8'b00000000;
+            tub_segments_2 <= 8'b00000000;
+            tub_select <= 8'b000000;
+        end else begin
+            scan_counter <= scan_counter + 1;
+            if (scan_counter >= SCAN_DELAY) begin
+                scan_counter <= 0;
+
+                // 清除上一段信号，防止残影
+                tub_segments_1 <= 8'b00000000;
+                tub_segments_2 <= 8'b00000000;
+                tub_select <= 8'b000000;
+                
+                // 只有当 visible 为高时才更新显示
+                if (display_mode) begin
+                    scan_index <= (scan_index + 1) % 6;
+                    case (scan_index)
+                        0: begin
+                            tub_segments_1 <= segment_lut[hours / 10];  // 小时十位
+                            tub_select <= 8'b10000000;
+                        end
+                        1: begin
+                            tub_segments_1 <= segment_lut[hours % 10];  // 小时个位
+                            tub_select <= 8'b01000000;
+                        end
+                        2: begin
+                            tub_segments_1 <= segment_lut[minutes / 10]; // 分钟十位
+                            tub_select <= 8'b00100000;
+                        end
+                        3: begin
+                            tub_segments_1 <= segment_lut[minutes % 10]; // 分钟个位
+                            tub_select <= 8'b00010000;
+                        end
+                        4: begin
+                            tub_segments_2 <= segment_lut[seconds / 10]; // 秒十位
+                            tub_select <= 8'b00001000;
+                        end
+                        5: begin
+                            tub_segments_2 <= segment_lut[seconds % 10]; // 秒个位
+                            tub_select <= 8'b00000100;
+                        end
+                    endcase
+                end
+                else begin
+                    scan_index <= (scan_index + 1) % 4;
+
+                    case (scan_index)
+                        0: begin
+                            tub_segments_1 <= segment_lut[remind_hours / 10];  // 小时十位
+                            tub_select <= 8'b10000000;
+                        end
+                        1: begin
+                            tub_segments_1 <= segment_lut[remind_hours % 10];  // 小时个位
+                            tub_select <= 8'b01000000;
+                        end
+                        2: begin
+                            tub_segments_1 <= segment_lut[remind_minutes / 10]; // 分钟十位
+                            tub_select <= 8'b00100000;
+                        end
+                        3: begin
+                            tub_segments_1 <= segment_lut[remind_minutes % 10]; // 分钟个位
+                            tub_select <= 8'b00010000;
+                        end
+                    endcase
+                end
+            end
+        end
     end
 
 endmodule
