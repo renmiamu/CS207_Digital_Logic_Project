@@ -5,8 +5,8 @@ module gesture_power_control (
     input right_key,
     input [1:0] time_select,
     output reg power_state,
-    output reg [7:0] tub_segments_gesture_time,
-    output reg tub_select_gesture_time
+    output [7:0] tub_segments_gesture_time,
+    output tub_select_gesture_time
 );
 
 parameter IDLE = 2'b00;
