@@ -1,66 +1,48 @@
-module main (
+`timescale 1ns / 1ps
+
+module main(
     input clk,
     input reset,
-    input key_input,
-    input left_key,
-    input right_key,
-    input light_key,
+    input menu_btn,
+    input [2:0] speed_btn,
+    input clean_btn,
     input set_mode,
+    input display_mode,
+    input set_select,    
     input increase_key,
-    output LED1,
-    output LED2,
-    output [7:0] hour_tub_control_1,
-    output [7:0] hour_tub_control_2,
-    output [7:0] minute_tub_control_1,
-    output [7:0] minute_tub_control_2,
-    output [7:0] second_tub_control_1,
-    output [7:0] second_tub_control_2
+    output [2:0] mode,
+    output countdown,
+    output reminder,
+    output [7:0] tub_control_1,
+    output [7:0] tub_control_2,
+    output [7:0] tub_select,
+    output speaker
 );
+    wire cleaning_reminder;
 
-wire short_press,long_press;
-wire power_state;
-wire LED_state1;
-wire light_state;
-
-key_press_detector press(
-    .clk(clk),
-    .reset(reset),
-    .key_input(key_input),
-    .short_press(short_press),
-    .long_press(long_press)
-);
-
-power_control control1(
-    .clk(clk),
-    .reset(reset),
-    .short_press(short_press),
-    .long_press(long_press),
-    .power_state(LED_state1)
-);
-
-light light_control(
-    .clk(clk),
-    .reset(reset),
-    .power_state(LED_state1),
-    .light_key(light_key),
-    .light_state(light_state)
-);
-
-timer time(
-    .clk(clk),
-    .reset(reset),
-    .power_state(LED_state1),
-    .set_mode(set_mode),
-    .increase_key(increase_key),
-    .hour_tub_control_1(hour_tub_control_1),
-    .hour_tub_control_2(hour_tub_control_2),
-    .minute_tub_control_1(minute_tub_control_1),
-    .minute_tub_control_2(minute_tub_control_2),
-    .second_tub_control_1(second_tub_control_1),
-    .second_tub_control_2(second_tub_control_2)
-);
-
-assign LED1 = LED_state1;
-assign LED2 =light_state;
+    // 实例化 mode_change 模块
+    mode_change modechanger(
+        .clk(clk),
+        .reset(reset),
+        .menu_btn(menu_btn),
+        .speed_btn(speed_btn),
+        .clean_btn(clean_btn),
+        .set_mode(set_mode),
+        .display_mode(display_mode),
+        .set_select(set_select),
+        .increase_key(increase_key),
+        .mode(mode),
+        .countdown(countdown),
+        .cleaning_reminder(cleaning_reminder),
+        .tub_segments_1(tub_control_1),  // 连接小时段码
+        .tub_segments_2(tub_control_2),  // 连接小时段码（可以根据需要修改连接或添加其他信号）
+        .tub_select(tub_select)      // 连接分钟段码（同样可以更改为实际需要的信号）
+    );
+    sound_reminder(
+    cleaning_reminder,
+    clk,
+    speaker
+    );
+    assign reminder = cleaning_reminder;
 
 endmodule
