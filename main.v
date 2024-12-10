@@ -12,27 +12,29 @@ module main(
     input menu_btn,           // 菜单键
     input [2:0] speed_btn,    // 工作挡位
     input clean_btn,          // 清洁按钮
-    input set_warning_mode,     // 提醒时间设置
     input display_mode,         // 显示工作时间或显示提醒时间
-    input set_warning_select,      // 提醒时间调整分钟或小时
     input increase_warning_key,      // 提醒时间增加按钮
     input work_time_key,       // 工作时间切换按钮
     input gesture_time_key,    // 手势操作时间切换按钮
-    output [7:0] tub_segments_gesture_time,   // 手势操作时间显示
-    output tub_select_gesture_time,       // 手势操作数码管设置
-    output [7:0] tub_segments_1,  // 开机时间显示
-    output [7:0] tub_segments_2,  // 开机时间显示
-    output [5:0] tub_select,       // 开机数码管设置
+    output reg [7:0] tub_segments1,  // 开机时间显示
+    output reg [7:0] tub_segments2,  // 开机时间显示
+    output reg [7:0] tub_segment_select,       // 开机数码管设置
     output light_state,            // 照明灯
     output [2:0] mode,             // 工作模式
     output countdown,              // 倒计时显示灯
     output reminder,              // 提醒清洁灯
-    output [7:0] tub_control_warning_1,   // 累计工作时间
-    output [7:0] tub_control_warning_2,   // 累计工作时间
-    output [7:0] tub_warning_select,              // 累计工作时间数码管设置
     output speaker,                // 扬声器
     output pwm                      // PWM信号
 );
+
+wire [7:0] tub_segments_gesture_time;   // 手势操作时间显示
+wire tub_select_gesture_time;       // 手势操作数码管设置
+wire [7:0] tub_segments_1;  // 开机时间显示
+wire [7:0] tub_segments_2;  // 开机时间显示
+wire [5:0] tub_select;       // 开机数码管设置
+wire [7:0] tub_control_warning_1;   // 累计工作时间
+wire [7:0] tub_control_warning_2;   // 累计工作时间
+wire [7:0] tub_warning_select;              // 累计工作时间数码管设置
 
 wire short_press,long_press;
 key_press_detector key_press_detector(
@@ -93,9 +95,9 @@ mode_change modechanger(
     .menu_btn(menu_btn),
     .speed_btn(speed_btn),
     .clean_btn(clean_btn),
-    .set_mode(set_warning_mode),
+    .set_mode(set_mode),
     .display_mode(display_mode),
-    .set_select(set_warning_select),
+    .set_select(set_select),
     .increase_key(increase_warning_key),
     .mode(suction),
     .countdown(countdown),
@@ -138,23 +140,27 @@ always @(*) begin
     case (display_mode_select)
         2'b00: begin
             // 显示开机时间
-            tub_segments_1 = tub_segments_1_value;
-            tub_segments_2 = tub_segments_2_value;
+            tub_segments1 = tub_segments_1;
+            tub_segments2 = tub_segments_2;
+            tub_segment_select = {tub_select,2'b00};
         end
         2'b01: begin
             // 显示工作时间
-            tub_segments_1 = work_time_segments_1;
-            tub_segments_2 = work_time_segments_2;
+            tub_segments1 = tub_control_warning_1;
+            tub_segments2 = tub_control_warning_2;
+            tub_segment_select = tub_warning_select;
         end
         2'b10: begin
             // 显示手势操作时间
-            tub_segments_1 = gesture_time_segments_1;
-            tub_segments_2 = gesture_time_segments_2;
+            tub_segments1 = tub_segments_gesture_time;
+            tub_segments2 = 8'b00000000;
+            tub_segment_select = {tub_segments_gesture_time,7'b0000000};
         end
         default: begin
             // 默认显示开机时间
-            tub_segments_1 = tub_segments_1_value;
-            tub_segments_2 = tub_segments_2_value;
+            tub_segments1 = tub_segments_1;
+            tub_segments2 = tub_segments_2;
+            tub_segment_select = {tub_select,2'b00};
         end
     endcase
 end

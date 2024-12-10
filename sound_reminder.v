@@ -9,11 +9,11 @@ module sound_reminder(
     reg pwm;
     
     parameter note = 440000;  // 频率 (440Hz)
-    parameter first = 330000;  // suction = 001 时的频率
-    parameter second = 550000; // suction = 010 时的频率
-    parameter third = 780000;   // suction = 100 时的频率
+    parameter first = 550776;  // suction = 001 时的频率
+    parameter second = 451699; // suction = 010 时的频率
+    parameter third = 364545;   // suction = 100 时的频率
 
-    parameter volume = 8'd150;  // 音量占空比控制 (0-255)
+    parameter volume = 8'd175;  // 音量占空比控制 (0-255)
 
     initial begin
         pwm = 0;
