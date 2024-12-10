@@ -8,6 +8,7 @@ module mode_change(
     input display_mode,    // 是否显示累计工作时间
     input set_select,      // 外部输入控制调整分钟或小时
     input increase_key,
+    input power_state,
     output reg [2:0] mode, // 模式输出 (000:待机, 001:1档, 010:2档, 100:3档, 111:自清洁)
     output reg countdown,   // 倒计时输出（1为倒计时中，0为不倒计时）
     output reg cleaning_reminder, // 自清洁提醒信号
@@ -86,20 +87,23 @@ module mode_change(
             debounce_counter <= 0;
             menu_btn_stable <= 0;
         end else begin
-            // 同步化处理，防止时钟域交叉带来的亚稳态
-            menu_btn_sync_0 <= menu_btn;
-            menu_btn_sync_1 <= menu_btn_sync_0;
+            if (power_state == 1) begin
+                // 同步化处理，防止时钟域交叉带来的亚稳态
+                menu_btn_sync_0 <= menu_btn;
+                menu_btn_sync_1 <= menu_btn_sync_0;
 
-            // 消抖计数逻辑
-            if (menu_btn_sync_1 == menu_btn_stable) begin
-                debounce_counter <= 0;
-            end else begin
-                debounce_counter <= debounce_counter + 1;
-                if (debounce_counter == 20'd1000000) begin
-                    menu_btn_stable <= menu_btn_sync_1;
+                // 消抖计数逻辑
+                if (menu_btn_sync_1 == menu_btn_stable) begin
                     debounce_counter <= 0;
+                end else begin
+                    debounce_counter <= debounce_counter + 1;
+                    if (debounce_counter == 20'd1000000) begin
+                        menu_btn_stable <= menu_btn_sync_1;
+                        debounce_counter <= 0;
+                    end
                 end
             end
+            
         end
     end
 
@@ -113,7 +117,9 @@ module mode_change(
         if (!reset) begin
             menu_btn_stable_last <= 0;
         end else begin
-            menu_btn_stable_last <= menu_btn_stable;
+            if (power_state == 1) begin
+                menu_btn_stable_last <= menu_btn_stable;
+            end
         end
     end
 
@@ -122,22 +128,23 @@ module mode_change(
         if (!reset) begin
             current_state <= STANDBY;
             mode <= 3'b000;
-            suction_3_used <= 0;
         end else begin
-            current_state <= next_state;
+            if (power_state == 1) begin
+               current_state <= next_state;
 
-            // 更新模式输出
-            case (next_state)
-                STANDBY: mode <= 3'b000;
-                WAIT_FOR_SPEED: mode <= 3'b000; // 等待输入时保持待机状态
-                SUCTION_1: mode <= 3'b001;
-                SUCTION_2: mode <= 3'b010;
-                SUCTION_3: mode <= 3'b100;
-                SUCTION_3_TIMER: mode <= 3'b100; // 保持3档模式，但处于倒计时状态
-                RETURN_TO_STANDBY: mode <= 3'b000; // 返回待机倒计时
-                CLEANING: mode <= 3'b111;
-                default: mode <= 3'b000;
-            endcase
+                // 更新模式输出
+                case (next_state)
+                    STANDBY: mode <= 3'b000;
+                    WAIT_FOR_SPEED: mode <= 3'b000; // 等待输入时保持待机状态
+                    SUCTION_1: mode <= 3'b001;
+                    SUCTION_2: mode <= 3'b010;
+                    SUCTION_3: mode <= 3'b100;
+                    SUCTION_3_TIMER: mode <= 3'b100; // 保持3档模式，但处于倒计时状态
+                    RETURN_TO_STANDBY: mode <= 3'b000; // 返回待机倒计时
+                    CLEANING: mode <= 3'b111;
+                    default: mode <= 3'b000;
+                endcase 
+            end
         end
     end
 
@@ -146,14 +153,17 @@ module mode_change(
         if (!reset) begin
             suction_3_used <= 0;
         end else if (current_state == SUCTION_3 && next_state == SUCTION_3_TIMER) begin
-            suction_3_used <= 1; // 当进入 SUCTION_3_TIMER 后标志位设置为 1
+            if (power_state == 1) begin
+                suction_3_used <= 1; // 当进入 SUCTION_3_TIMER 后标志位设置为 1
+            end
         end
     end
 
     // 状态机逻辑
     always @(*) begin
         next_state = current_state; // 默认保持当前状态
-        case(current_state)
+        if (power_state == 1) begin
+            case(current_state)
             STANDBY: begin
                 if (menu_btn_pressed) begin
                     next_state = WAIT_FOR_SPEED; // 按菜单键后进入等待速度按键模式
@@ -198,11 +208,13 @@ module mode_change(
                     next_state = STANDBY;  // 倒计时结束后返回待机
             end
         endcase
+        end
     end
 
     // 计时器逻辑
     always @(posedge clk or negedge reset) begin
-        if (!reset)
+        if (power_state == 1) begin
+           if (!reset)
             timer <= 32'd1800000000; // 初始化为自清洁倒计时（180秒）
         else if (next_state == SUCTION_3_TIMER && timer > 0)
             timer <= timer - 1; // 3档倒计时中递减
@@ -217,7 +229,8 @@ module mode_change(
         else if (next_state == CLEANING && timer == 0) 
             timer <= 32'd1800000000; // 启动自清洁倒计时（180秒）
         else
-            timer <= 0;  // 其他模式不计时
+            timer <= 0;  // 其他模式不计时 
+        end
     end
 
     // 倒计时指示
@@ -230,9 +243,10 @@ module mode_change(
 
     // 工作时长计数器
     always @(posedge clk or negedge reset) begin
-        if (!reset|| clean_btn) begin
+        if (power_state == 1) begin
+            if (!reset|| clean_btn) begin
             // 复位时或开始自清洁时，清空状态
-            hours <= 0;
+            hours <= 10;
             minutes <= 0;
             seconds <= 0;
             counter <= 0;
@@ -269,6 +283,7 @@ module mode_change(
         end else if(current_state != STANDBY) begin
             cleaning_reminder <= 0;
             end  
+        end
     end
 
     //设置提醒时间
@@ -285,7 +300,8 @@ module mode_change(
 
     // 时间显示逻辑
     always @(posedge clk or negedge reset) begin
-        if (!reset) begin
+        if (power_state == 1) begin
+            if (!reset) begin
             scan_counter <= 0;
             scan_index <= 0;
             tub_segments_1 <= 8'b00000000;
@@ -355,6 +371,7 @@ module mode_change(
                 end
             end
         end
-    end
+        end
+        end
 
 endmodule
