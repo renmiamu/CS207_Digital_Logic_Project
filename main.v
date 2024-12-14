@@ -108,7 +108,7 @@ light light(
 wire cleaning_reminder;       
 wire [2:0] suction;          
 
-mode_change modechanger(
+mode_change mode_changer(
     .clk(clk),
     .reset(reset),
     .menu_btn(menu_btn),
@@ -165,15 +165,21 @@ always @(posedge clk or negedge reset) begin
 
 end else begin
     // 根据显示模式更新显示内容
-    
-    tub_segments1 <= tub_control_warning_1;
-            tub_segments2 <= tub_control_warning_2;
-            tub_segment_select <= tub_warning_select;
+    if (gesture_time_key)begin
+        tub_segments1 <= 8'00000000;
+        tub_segments2 <= tub_segments_gesture_time;
+        tub_segment_select <= {7'b0000000,tub_select_gesture_time};
+    end else begin
+        tub_segments1<=tub_segments_1;
+        tub_segments2<=tub_segments_2;
+        tub_segment_select<={tub_select,2'b00};
+    end
 //        // 默认显示开机时间
 //        tub_segments1 <= tub_segments_1;
 //        tub_segments2 <= tub_segments_2;
 //        tub_segment_select <= {tub_select, 2'b00};
 
+end
 end
 
 endmodule
