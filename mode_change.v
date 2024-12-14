@@ -250,7 +250,9 @@ module mode_change(
             minutes <= 0;
             seconds <= 0;
             counter <= 0;
-        end else if (current_state == SUCTION_1 || current_state == SUCTION_2 || current_state == SUCTION_3) begin
+            remind_hours <= 10;
+            remind_minutes <= 0;
+        end else if (power_state == 1 && (current_state == SUCTION_1 || current_state == SUCTION_2 || current_state == SUCTION_3)) begin
             // 累计工作时长
             counter <= counter + 1;
             if (counter >= ONE_SECOND) begin
@@ -277,7 +279,7 @@ module mode_change(
             cleaning_reminder <= 0; // 已开启自清洁，清空提醒信号
 
         end else if (current_state == STANDBY) begin
-            if (hours >= remind_hours && minutes >= remind_minutes) begin
+            if (hours >= remind_hours && minutes >= remind_minutes && power_state == 1) begin
                 cleaning_reminder <= 1; // 默认工作时间累计10小时，提醒自清洁
             end
         end else if(current_state != STANDBY) begin

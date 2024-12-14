@@ -14,7 +14,6 @@ module main(
     input [2:0] speed_btn,      // 工作挡位
     input clean_btn,            // 清洁按钮
     input display_mode,         // 显示工作时间或显示提醒时间
-    input increase_warning_key, // 提醒时间增加按钮
     input work_time_key,        // 工作时间切换按钮
     input gesture_time_key,     // 手势操作时间切换按钮
     output reg power_state,         // 开机亮灯
@@ -118,7 +117,7 @@ mode_change modechanger(
     .set_mode(set_mode),
     .display_mode(display_mode),
     .set_select(set_select),
-    .increase_key(increase_warning_key),
+    .increase_key(increase_key),
     .mode(suction),
     .countdown(countdown),
     .power_state(power_state),
@@ -149,9 +148,9 @@ always @(posedge clk or negedge reset) begin
         if (work_time_key && gesture_time_key) begin
             display_mode_select <= 2'b00;  // 两个按键同时按下，显示开机时间
         end else if (work_time_key) begin
-            display_mode_select <= 2'b01;  // 显示工作时间
+            display_mode_select <= 2'b10;  // 显示工作时间
         end else if (gesture_time_key) begin
-            display_mode_select <= 2'b10;  // 显示手势操作时间
+            display_mode_select <= 2'b01;  // 显示手势操作时间
         end
     end
 end
@@ -166,28 +165,7 @@ always @(posedge clk or negedge reset) begin
 
 end else begin
     // 根据显示模式更新显示内容
-    if (display_mode_select == 2'b00) begin
-        // 显示开机时间
-        tub_segments1 <= tub_segments_1;
-        tub_segments2 <= tub_segments_2;
-        tub_segment_select <= {tub_select, 2'b00};
-
-    end else if (display_mode_select == 2'b01) begin
-    tub_segments1 <= tub_segments_1;
-            tub_segments2 <= tub_segments_2;
-            tub_segment_select <= {tub_select, 2'b00};
-        // 显示工作时间
-//        tub_segments1 <= tub_control_warning_1;
-//        tub_segments2 <= tub_control_warning_2;
-//        tub_segment_select <= tub_warning_select;
-
-    end else if (display_mode_select == 2'b10) begin
-        // 显示手势操作时间
-        tub_segments1 <= tub_segments_gesture_time;
-        tub_segments2 <= 8'b00000000;
-        tub_segment_select <= {tub_segments_gesture_time, 7'b0000000};
-
-    end else begin
+    
     tub_segments1 <= tub_control_warning_1;
             tub_segments2 <= tub_control_warning_2;
             tub_segment_select <= tub_warning_select;
@@ -195,8 +173,6 @@ end else begin
 //        tub_segments1 <= tub_segments_1;
 //        tub_segments2 <= tub_segments_2;
 //        tub_segment_select <= {tub_select, 2'b00};
-    end
-end
 
 end
 

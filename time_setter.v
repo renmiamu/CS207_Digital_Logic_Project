@@ -14,7 +14,7 @@ module timer_setter (
 
     reg inc_prev;              // 按键前一状态
     reg [15:0] scan_counter;   // 动态扫描分频计数器
-    reg [1:0] scan_index;      // 动态扫描索引, 改为 2 位，以支持 0 到 3 的范围
+    reg [1:0] scan_index;      // 动态扫描索引
     reg lock_key;              // 按键锁存信号
 
     // 按键持续计时
@@ -95,7 +95,7 @@ module timer_setter (
     always @(posedge clk or negedge reset) begin
         if (!reset) begin
             // 当复位或关机时，清空状态
-            hours <= 0;
+            hours <= 10;
             minutes <= 0;
             inc_prev <= 0;
             lock_key <= 0; // 按键解锁
