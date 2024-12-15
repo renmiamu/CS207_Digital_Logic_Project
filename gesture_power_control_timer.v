@@ -26,17 +26,17 @@ module gesture_power_control_timer (
         if (!reset) begin
             countdown_time <= TIME_5S;  // Default time to 5 seconds
             tub_segments_gesture_time<=segment_lut[1];
-            tub_select_gesture_time<=1'b1;
+            tub_select_gesture_time<=1'b0;
         end else begin
             case (time_select)
                 2'b00: begin
-                    countdown_time <= TIME_2S;  // Set time to 2s
-                    tub_segments_gesture_time<=segment_lut[0];
+                    countdown_time <= TIME_5S;  // Set time to 2s
+                    tub_segments_gesture_time<=segment_lut[1];
                     tub_select_gesture_time<=1'b1;
                 end
                 2'b01: begin
-                    countdown_time <= TIME_5S;  // Set time to 5s
-                    tub_segments_gesture_time<=segment_lut[1];
+                    countdown_time <= TIME_2S;  // Set time to 5s
+                    tub_segments_gesture_time<=segment_lut[0];
                     tub_select_gesture_time<=1'b1;
                 end
                 2'b10: begin

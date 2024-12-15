@@ -31,6 +31,7 @@ module mode_change(
 
     reg [2:0] current_state, next_state;
     reg [31:0] timer; // 倒计时计时器
+    reg [31:0] STANDBY_timer; // 倒计时计时器
     reg suction_3_used; // 标志风扇三级档位是否已经使用
 
     // 消抖逻辑信号
@@ -123,10 +124,8 @@ module mode_change(
         if (!reset) begin
             current_state <= STANDBY;
             mode <= 3'b000;
-            suction_3_used <= 0;
-        end else begin
-            current_state <= next_state;
-
+        end else if (power_state) begin
+                    current_state <= next_state;
             // 更新模式输出
             case (next_state)
                 STANDBY: mode <= 3'b000;
@@ -151,68 +150,78 @@ module mode_change(
         end
     end
 
-    // 状态机逻辑
-    always @(*) begin
+   // 状态机逻辑
+    always @(*) begin  
         next_state = current_state; // 默认保持当前状态
-        case(current_state)
-            STANDBY: begin
-                if (menu_btn_pressed) begin
-                    next_state = WAIT_FOR_SPEED; // 按菜单键后进入等待速度按键模式
+        if (power_state) begin  // 只有当 power_state 为 1 时，才允许状态切换
+            case(current_state)
+                STANDBY: begin
+                    if (menu_btn_pressed) begin
+                        next_state = WAIT_FOR_SPEED; // 按菜单键后进入等待速度按键模式
+                    end
                 end
-            end
-            WAIT_FOR_SPEED: begin
-                if (speed_btn != 3'b000) begin
-                    case(speed_btn)
-                        3'b001: next_state = SUCTION_1;   // 按1档键，进入1档模式
-                        3'b010: next_state = SUCTION_2;   // 按2档键，进入2档模式
-                        3'b100: begin
-                            if (!suction_3_used) begin
-                                next_state = SUCTION_3;   // 按3档键，进入3档模式（仅限第一次）
+                WAIT_FOR_SPEED: begin
+                    if (speed_btn != 3'b000) begin
+                        case(speed_btn)
+                            3'b001: next_state = SUCTION_1;   // 按1档键，进入1档模式
+                            3'b010: next_state = SUCTION_2;   // 按2档键，进入2档模式
+                            3'b100: begin
+                                if (!suction_3_used) begin
+                                    next_state = SUCTION_3;   // 按3档键，进入3档模式（仅限第一次）
+                                end
                             end
-                        end
-                        default: next_state = WAIT_FOR_SPEED;
-                    endcase
-                end else if (clean_btn) begin
-                    next_state = CLEANING; // 按清洁键，进入自清洁模式
+                            default: next_state = WAIT_FOR_SPEED;
+                        endcase
+                    end else if (clean_btn) begin
+                        next_state = CLEANING; // 按清洁键，进入自清洁模式
+                    end
                 end
-            end
-            SUCTION_1: begin
-                if (menu_btn_pressed) next_state = STANDBY;  // 按菜单键返回待机
-            end
-            SUCTION_2: begin
-                if (menu_btn_pressed) next_state = STANDBY;  // 按菜单键返回待机
-            end
-            SUCTION_3: begin
-                next_state = SUCTION_3_TIMER; // 开始60秒倒计时
-            end
-            SUCTION_3_TIMER: begin
-                if (timer == 0) next_state = SUCTION_2;  // 倒计时结束后进入二档模式
-                else if (menu_btn_pressed) next_state = RETURN_TO_STANDBY;  // 按菜单键返回待机
-            end
-            RETURN_TO_STANDBY: begin
-                if (timer == 0) next_state = STANDBY;  // 倒计时结束后返回待机
-            end
-            CLEANING: begin
-                if (timer > 0)
-                    next_state = CLEANING;
-                else if (timer == 0)
-                    next_state = STANDBY;  // 倒计时结束后返回待机
-            end
-        endcase
+                SUCTION_1: begin
+                    if (menu_btn_pressed) next_state = STANDBY;  
+                    // 按菜单键返回待机
+                   else if(speed_btn == 3'b010) next_state = SUCTION_2;
+                end
+                SUCTION_2: begin
+                    if (menu_btn_pressed) next_state = STANDBY;  // 按菜单键返回待机
+                    else if(speed_btn == 3'b001) next_state = SUCTION_1;
+                end
+                SUCTION_3: begin
+                    next_state = SUCTION_3_TIMER; // 开始60秒倒计时
+                end
+                SUCTION_3_TIMER: begin
+                    if (timer == 0) next_state = SUCTION_2;  // 倒计时结束后进入二档模式
+                    else if (menu_btn_pressed) next_state = RETURN_TO_STANDBY;  // 按菜单键返回待机
+                end
+                RETURN_TO_STANDBY: begin
+                    if (timer == 0) next_state = STANDBY;  // 倒计时结束后返回待机
+                end
+                CLEANING: begin
+                    if (timer > 0)
+                        next_state = CLEANING;
+                    else if (timer == 0)
+                        next_state = STANDBY;  // 倒计时结束后返回待机
+                end
+            endcase
+        end
     end
 
+
     // 计时器逻辑
-    always @(posedge clk or negedge reset) begin
-        if (!reset)
-            timer <= 32'd1800000000; // 初始化为自清洁倒计时（180秒）
+     always @(posedge clk or negedge reset) begin
+        if (!reset)begin
+            timer <= 32'd1800000000;
+            STANDBY_timer <= 32'd600000000;
+            end // 初始化为自清洁倒计时（180秒）
         else if (next_state == SUCTION_3_TIMER && timer > 0)
             timer <= timer - 1; // 3档倒计时中递减
         else if (next_state == SUCTION_3_TIMER && timer == 0)
-            timer <= 32'd600000000; // 启动3档倒计时（60秒）
-        else if (next_state == RETURN_TO_STANDBY && timer > 0)
-            timer <= timer - 1; // 返回待机倒计时
-        else if (next_state == RETURN_TO_STANDBY && timer == 0)
-            timer <= 32'd600000000; // 启动返回待机倒计时（60秒）
+            timer <= 32'd600000000; // 启动3档倒计时（60秒） 
+//        else if (next_state == RETURN_TO_STANDBY && STANDBY_timer == 0)
+//            timer <= STANDBY_timer; // 启动返回待机倒计时（60秒）
+        else if (next_state == RETURN_TO_STANDBY && STANDBY_timer > 0) begin
+            STANDBY_timer <= STANDBY_timer - 1; // 返回待机倒计时
+            timer <= STANDBY_timer; 
+        end
         else if (next_state == CLEANING && countdown == 1)
             timer <= timer - 1; // 自清洁模式倒计时递减
         else if (next_state == CLEANING && timer == 0) 
@@ -237,7 +246,7 @@ module mode_change(
             minutes <= 0;
             seconds <= 0;
             counter <= 0;
-        end else if (power_state && (current_state == SUCTION_1 || current_state == SUCTION_2 || current_state == SUCTION_3)) begin
+          end else if (power_state && (current_state == SUCTION_1 || current_state == SUCTION_2 || current_state == SUCTION_3||current_state == SUCTION_3_TIMER||current_state == RETURN_TO_STANDBY)) begin
             // 累计工作时长
             counter <= counter + 1;
             if (counter >= ONE_SECOND) begin

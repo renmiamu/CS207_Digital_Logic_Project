@@ -170,7 +170,7 @@ end else begin
         tub_segments1 <= tub_control_warning_1;
         tub_segments2 <= tub_control_warning_2;
         tub_segment_select <= tub_warning_select;
-    end else if (gesture_time_key) begin
+    end else if (gesture_time_key && power_state) begin
         tub_segments1 <= 8'b00000000;
         tub_segments2 <= tub_segments_gesture_time;
         tub_segment_select <= {7'b0000000,tub_select_gesture_time};

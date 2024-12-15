@@ -161,6 +161,7 @@ module timer_mode (
                 tub_select <= 6'b000000;
                 
                 scan_index <= (scan_index + 1) % 6;
+                if (power_state) begin
                 case (scan_index)
                     0: begin
                         tub_segments_1 <= segment_lut[hours / 10];  // 小时十位
@@ -187,6 +188,7 @@ module timer_mode (
                         tub_select <= 6'b000001;
                     end
                 endcase
+                end
             end
         end
     end
