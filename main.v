@@ -9,6 +9,7 @@ module main(
     input set_mode,             // 时间设置
     input set_select,           // 外部输入控制调整分钟或小时
     input increase_key,         // 时间增加按钮
+    input increase_warning_key,  
     input light_key,            // 照明开关
     input menu_btn,             // 菜单键
     input [2:0] speed_btn,      // 工作挡位
@@ -117,7 +118,7 @@ mode_change mode_changer(
     .set_mode(set_mode),
     .display_mode(display_mode),
     .set_select(set_select),
-    .increase_key(increase_key),
+    .increase_key(increase_warning_key),
     .mode(suction),
     .countdown(countdown),
     .power_state(power_state),
@@ -134,7 +135,7 @@ sound_reminder u_sound_reminder (
     .speaker(speaker)
 );
 
-assign reminder = cleaning_reminder; // 将 cleaning_reminder 信号赋给 reminder 输出
+assign reminder = cleaning_reminder && power_state; // 将 cleaning_reminder 信号赋给 reminder 输出
 assign mode = suction;
 assign pwm = 1'b0;
 
@@ -165,20 +166,20 @@ always @(posedge clk or negedge reset) begin
 
 end else begin
     // 根据显示模式更新显示内容
-    if (gesture_time_key)begin
-        tub_segments1 <= 8'00000000;
+    if (work_time_key)begin
+        tub_segments1 <= tub_control_warning_1;
+        tub_segments2 <= tub_control_warning_2;
+        tub_segment_select <= tub_warning_select;
+    end else if (gesture_time_key) begin
+        tub_segments1 <= 8'b00000000;
         tub_segments2 <= tub_segments_gesture_time;
         tub_segment_select <= {7'b0000000,tub_select_gesture_time};
     end else begin
-        tub_segments1<=tub_segments_1;
-        tub_segments2<=tub_segments_2;
-        tub_segment_select<={tub_select,2'b00};
-    end
-//        // 默认显示开机时间
-//        tub_segments1 <= tub_segments_1;
-//        tub_segments2 <= tub_segments_2;
-//        tub_segment_select <= {tub_select, 2'b00};
-
+        // 默认显示开机时间
+        tub_segments1 <= tub_segments_1;
+        tub_segments2 <= tub_segments_2;
+        tub_segment_select <= {tub_select, 2'b00};
+end
 end
 end
 
