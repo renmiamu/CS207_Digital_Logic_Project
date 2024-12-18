@@ -60,7 +60,7 @@
 
 **输入输出端口说明示意图**如下：
 
-![本地图片](/Users/hlshen/Desktop/CS207_Digital_Logic_Project/EGO1.png)
+![EGO1](/Users/hlshen/Desktop/CS207_Digital_Logic_Project/EGO1.png)
 
 **顶层端口设计**如下：
 
