@@ -95,6 +95,8 @@
 
 并可以用下图展示：
 
+![main](https://github.com/renmiamu/CS207_Digital_Logic_Project/blob/master/photos/main.png)
+
 ## 系统结构说明
 
 **本项目的结构可由下面的流程图说明，其中，每个模块的功能在后面的子模块功能说明中有详细的介绍。**
