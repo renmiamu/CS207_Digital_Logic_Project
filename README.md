@@ -56,7 +56,7 @@
 
 **输入输出端口说明示意图**如下：
 
-![EGO1](https://github.com/renmiamu/CS207_Digital_Logic_Project/blob/master/EGO1.png)
+![EGO1](https://github.com/renmiamu/CS207_Digital_Logic_Project/blob/master/photos/EGO1.png)
 
 **顶层端口设计**如下：
 
@@ -102,9 +102,9 @@
 
 ### 顶层模块：main
 
-![Schematic](https://github.com/renmiamu/CS207_Digital_Logic_Project/blob/master/Schematic1.png)
+![Schematic](https://github.com/renmiamu/CS207_Digital_Logic_Project/blob/master/photos/Schematic1.png)
 
-![Schematic2](https://github.com/renmiamu/CS207_Digital_Logic_Project/blob/master/Schematic2.png)
+![Schematic2](https://github.com/renmiamu/CS207_Digital_Logic_Project/blob/master/photos/Schematic2.png)
 
 内部直接实现子模块实例：
 
