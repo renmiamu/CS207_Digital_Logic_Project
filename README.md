@@ -63,7 +63,7 @@
 |      Port name       | Direction |   Type    |      Description       |
 | :------------------: | :-------: | :-------: | :--------------------: |
 |        reset         |   input   |           |        重置系统        |
-|         clk          |   input   |   wire    |       总时钟信号       |
+|         clk          |   input   |           |       总时钟信号       |
 |      key_input       |   input   |   wire    |        开关机键        |
 |     time_select      |   input   | wire[1:0] |    手势操作时间设置    |
 |       left_key       |   input   |   wire    |      手势操作左键      |
@@ -132,13 +132,13 @@
 |         Port name         | Direction |  Type  |  Description   |
 | :-----------------------: | :-------: | :----: | :------------: |
 |           reset           |   input   |        |      重置      |
-|            clk            |   input   |  wire  |    时钟信号    |
+|            clk            |   input   |        |    时钟信号    |
 |        time_select        |   input   | [1:0]  |  时间选择信号  |
 |      countdown_time       |  output   | [31:0] |   倒计时时间   |
 | tub_segments_gesture_time |  output   | [7:0]  | 七段数码管内容 |
 |  tub_select_gesture_time  |  output   |        | 七段数码管控制 |
 
-
+![](C:\Users\ximgZ\Desktop\郑袭明大二\Digital Logic\project\CS207_digital_logic_project\photos\gesture_power_control_timer.png)
 
 ### 子模块：gesture_power_control
 
@@ -149,7 +149,7 @@
 |         Port name         | Direction | Type  |  Description   |
 | :-----------------------: | :-------: | :---: | :------------: |
 |           reset           |   input   |       |      重置      |
-|            clk            |   input   | wire  |    时钟信号    |
+|            clk            |   input   |       |    时钟信号    |
 |         left_key          |   input   |       |  手势开关左键  |
 |         right_key         |   input   |       |  手势开关右键  |
 |        time_select        |   input   | [1:0] |  时间选择信号  |
@@ -157,7 +157,7 @@
 | tub_segments_gesture_time |  output   | [7:0] | 七段数码管信号 |
 |  tub_select_gesture_time  |  output   |       | 七段数码管控制 |
 
-
+![](C:\Users\ximgZ\Desktop\郑袭明大二\Digital Logic\project\CS207_digital_logic_project\photos\gesture_power_control.png)
 
 ### 子模块：key_press_detector
 
@@ -166,12 +166,12 @@
 |  Port name  | Direction | Type | Description  |
 | :---------: | :-------: | :--: | :----------: |
 |    reset    |   input   |      |     重置     |
-|     clk     |   input   | wire |   时钟信号   |
+|     clk     |   input   |      |   时钟信号   |
 |  key_input  |   input   |      | 按键输入信号 |
 | short_press |  output   | reg  |   短按信号   |
 | long_press  |  output   | reg  |   长按信号   |
 
-
+![](C:\Users\ximgZ\Desktop\郑袭明大二\Digital Logic\project\CS207_digital_logic_project\photos\key_press_detector.png)
 
 ### 子模块：power_control
 
@@ -180,12 +180,12 @@
 |  Port name  | Direction | Type | Description |
 | :---------: | :-------: | :--: | :---------: |
 |    reset    |   input   |      |    重置     |
-|     clk     |   input   | wire |  时钟信号   |
+|     clk     |   input   |      |  时钟信号   |
 | short_press |   input   |      |  短按信号   |
 | long_press  |   input   |      |  长按信号   |
 | power_state |  output   | reg  |  电源信号   |
 
-
+![](C:\Users\ximgZ\Desktop\郑袭明大二\Digital Logic\project\CS207_digital_logic_project\photos\power_control.png)
 
 ### 子模块：timer_mode
 
@@ -194,7 +194,7 @@
 |   Port name    | Direction | Type  |     Description      |
 | :------------: | :-------: | :---: | :------------------: |
 |     reset      |   input   |       |         重置         |
-|      clk       |   input   | wire  |       时钟信号       |
+|      clk       |   input   |       |       时钟信号       |
 |  power_state   |   input   |       |       电源信号       |
 |    set_mode    |   input   |       |     设置时间模式     |
 |   set_select   |   input   |       |  设置小时或分钟信号  |
@@ -203,7 +203,7 @@
 | tub_segments_2 |  output   | [7:0] | 第二组七段数码管显示 |
 |   tub_select   |  output   | [5:0] |    七段数码管控制    |
 
-
+![](C:\Users\ximgZ\Desktop\郑袭明大二\Digital Logic\project\CS207_digital_logic_project\photos\timer_mode.png)
 
 ### 子模块：light
 
@@ -212,18 +212,68 @@
 |  Port name  | Direction | Type | Description |
 | :---------: | :-------: | :--: | :---------: |
 |    reset    |   input   |      |    重置     |
-|     clk     |   input   | wire |  时钟信号   |
+|     clk     |   input   |      |  时钟信号   |
 | power_state |   input   |      |  电源信号   |
 |  light_key  |   input   |      |  照明按键   |
 | light_state |  output   | reg  |  照明信号   |
 
-
+![](C:\Users\ximgZ\Desktop\郑袭明大二\Digital Logic\project\CS207_digital_logic_project\photos\light.png)
 
 ### 子模块：mode_change
 
+这段代码实现了一个模式切换模块，通过状态机实现多种工作模式的切换，如三种工作挡位之间的切换、自清洁、工作时间累计、智能提醒等功能。模块通过数码管显示工作时间或提醒时间，并能够调整智能提醒时间。
+
+|     Port name     | Direction | Type  |    Description     |
+| :---------------: | :-------: | :---: | :----------------: |
+|       reset       |   input   |       |        重置        |
+|        clk        |   input   |       |      时钟信号      |
+|     menu_btn      |   input   |       |       菜单键       |
+|     speed_btn     |   input   | [2:0] |      工作挡位      |
+|     clean_btn     |   input   |       |     自清洁按键     |
+|     set_mode      |   input   |       |    时间选择信号    |
+|   display_mode    |   input   |       |  累计工作时间显示  |
+|    set_select     |   input   |       | 设置小时或分钟信号 |
+|   increase_key    |   input   |       |    时间增加按键    |
+|    power_state    |   input   |       |      电源信号      |
+|       mode        |  output   | [2:0] |      模式输出      |
+|     countdown     |  output   |       |   倒计时输出信号   |
+| cleaning_reminder |  output   |       |   自清洁提醒信号   |
+|  tub_segments_1   |  output   | [7:0] |   七段数码管信号   |
+|  tub_segments_2   |  output   | [7:0] |   七段数码管信号   |
+|    tub_select     |  output   | [7:0] |   七段数码管控制   |
+
+![](C:\Users\ximgZ\Desktop\郑袭明大二\Digital Logic\project\CS207_digital_logic_project\photos\mode_change.png)
+
 ### 子模块：sound_reminder
 
+这段代码实现了一个音频提醒模块，其主要功能是根据输入的使能信号 (`cleaning_reminder`) 和挡位输入 (`suction`)，生成一个 PWM 信号输出到扬声器 (`speaker`)，用以播放不同频率的声音，从而体现不同工作挡位。
+
+|     Port name     | Direction | Type  | Description |
+| :---------------: | :-------: | :---: | :---------: |
+|        clk        |   input   |       |  时钟信号   |
+| cleaning_reminder |   input   |       |  提醒信号   |
+|      suction      |   input   | [2:0] |  挡位输入   |
+|      speaker      |  output   | wire  |  声音信号   |
+
+![](C:\Users\ximgZ\Desktop\郑袭明大二\Digital Logic\project\CS207_digital_logic_project\photos\sound_reminder.png)
+
 ### 子模块：time_setter
+
+这段代码实现了一个时间调整模块，其主要功能是通过 `increase_key` 按键输入调整当前时间的小时和分钟，并通过数码管显示小时和分钟，用户可以在设置模式下调整智能提醒时间。
+
+|   Port name    | Direction | Type  |     Description      |
+| :------------: | :-------: | :---: | :------------------: |
+|     reset      |   input   |       |         重置         |
+|      clk       |   input   |       |       时钟信号       |
+|    visible     |   input   |       |  控制数码管是否显示  |
+|    set_mode    |   input   |       |     设置时间模式     |
+|   set_select   |   input   |       |  设置小时或分钟信号  |
+|  Increase_key  |   input   |       |     时间增加按键     |
+| tub_segments_1 |  output   | [7:0] | 第一组七段数码管显示 |
+| tub_segments_2 |  output   | [7:0] | 第二组七段数码管显示 |
+|   tub_select   |  output   | [5:0] |    七段数码管控制    |
+
+![](C:\Users\ximgZ\Desktop\郑袭明大二\Digital Logic\project\CS207_digital_logic_project\photos\time_setter.png)
 
 ## Bonus实现说明
 
@@ -231,7 +281,9 @@
 
 手势操作通过两个模块协同实现，其中`gesture_power_control_timer`提供倒计时选择功能，能根据`time_select`输入生成不同的倒计时时间（默认5s，可调整为2s，7s，9s），并输出对应的数码管段码和使能信号用于显示；`gesture_power_control`是核心控制模块，采用**状态机**设计，分为空闲（`IDLE`）、左键等待（`LEFT_WAIT`）和右键等待（`RIGHT_WAIT`）三种状态，通过左右键输入实现电源的开关控制。当电源关闭时，按下左键进入倒计时等待状态，如果在倒计时结束前按下右键，电源开启；当电源开启时，按下右键进入倒计时等待状态，如果在倒计时结束前按下左键，电源关闭。
 
-### 外界输出设备（扬声器）
+### 外接输出设备（扬声器）
+
+外接扬声器能实现两个功能，分别为声音实现智能提醒和使用不同声音输出输出三种工作挡位。该功能通过连个模块协同实现，其中`mode_change`模块中输出mode和cleaning_reminder，
 
 ## 项目总结
 
