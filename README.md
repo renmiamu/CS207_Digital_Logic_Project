@@ -140,7 +140,7 @@
 | tub_segments_gesture_time |  output   | [7:0]  | 七段数码管内容 |
 |  tub_select_gesture_time  |  output   |        | 七段数码管控制 |
 
-![](C:\Users\ximgZ\Desktop\郑袭明大二\Digital Logic\project\CS207_digital_logic_project\photos\gesture_power_control_timer.png)
+
 
 ### 子模块：gesture_power_control
 
@@ -161,7 +161,7 @@
 | tub_segments_gesture_time |  output   | [7:0] | 七段数码管信号 |
 |  tub_select_gesture_time  |  output   |       | 七段数码管控制 |
 
-![](C:\Users\ximgZ\Desktop\郑袭明大二\Digital Logic\project\CS207_digital_logic_project\photos\gesture_power_control.png)
+
 
 ### 子模块：key_press_detector
 
@@ -177,7 +177,7 @@
 | short_press |  output   | reg  |   短按信号   |
 | long_press  |  output   | reg  |   长按信号   |
 
-![](C:\Users\ximgZ\Desktop\郑袭明大二\Digital Logic\project\CS207_digital_logic_project\photos\key_press_detector.png)
+
 
 ### 子模块：power_control
 
@@ -213,7 +213,7 @@
 | tub_segments_2 |  output   | [7:0] | 第二组七段数码管显示 |
 |   tub_select   |  output   | [5:0] |    七段数码管控制    |
 
-![](C:\Users\ximgZ\Desktop\郑袭明大二\Digital Logic\project\CS207_digital_logic_project\photos\timer_mode.png)
+
 
 ### 子模块：light
 
@@ -229,11 +229,13 @@
 |  light_key  |   input   |      |  照明按键   |
 | light_state |  output   | reg  |  照明信号   |
 
-![](C:\Users\ximgZ\Desktop\郑袭明大二\Digital Logic\project\CS207_digital_logic_project\photos\light.png)
+
 
 ### 子模块：mode_change
 
 这段代码实现了一个模式切换模块，通过状态机实现多种工作模式的切换，如三种工作挡位之间的切换、自清洁、工作时间累计、智能提醒等功能。模块通过数码管显示工作时间或提醒时间，并能够调整智能提醒时间。
+
+![](https://github.com/renmiamu/CS207_Digital_Logic_Project/blob/master/photos/mode_change.png)
 
 |     Port name     | Direction | Type  |    Description     |
 | :---------------: | :-------: | :---: | :----------------: |
@@ -254,11 +256,13 @@
 |  tub_segments_2   |  output   | [7:0] |   七段数码管信号   |
 |    tub_select     |  output   | [7:0] |   七段数码管控制   |
 
-![](C:\Users\ximgZ\Desktop\郑袭明大二\Digital Logic\project\CS207_digital_logic_project\photos\mode_change.png)
+
 
 ### 子模块：sound_reminder
 
 这段代码实现了一个音频提醒模块，其主要功能是根据输入的使能信号 (`cleaning_reminder`) 和挡位输入 (`suction`)，生成一个 PWM 信号输出到扬声器 (`speaker`)，用以播放不同频率的声音，从而体现不同工作挡位。
+
+![](https://github.com/renmiamu/CS207_Digital_Logic_Project/blob/master/photos/sound_reminder.png)
 
 |     Port name     | Direction | Type  | Description |
 | :---------------: | :-------: | :---: | :---------: |
@@ -267,11 +271,13 @@
 |      suction      |   input   | [2:0] |  挡位输入   |
 |      speaker      |  output   | wire  |  声音信号   |
 
-![](C:\Users\ximgZ\Desktop\郑袭明大二\Digital Logic\project\CS207_digital_logic_project\photos\sound_reminder.png)
+
 
 ### 子模块：time_setter
 
 这段代码实现了一个时间调整模块，其主要功能是通过 `increase_key` 按键输入调整当前时间的小时和分钟，并通过数码管显示小时和分钟，用户可以在设置模式下调整智能提醒时间。
+
+![](https://github.com/renmiamu/CS207_Digital_Logic_Project/blob/master/photos/timer_setter.png)
 
 |   Port name    | Direction | Type  |     Description      |
 | :------------: | :-------: | :---: | :------------------: |
@@ -285,7 +291,7 @@
 | tub_segments_2 |  output   | [7:0] | 第二组七段数码管显示 |
 |   tub_select   |  output   | [5:0] |    七段数码管控制    |
 
-![](C:\Users\ximgZ\Desktop\郑袭明大二\Digital Logic\project\CS207_digital_logic_project\photos\time_setter.png)
+
 
 ## Bonus实现说明
 
@@ -295,7 +301,7 @@
 
 ### 外接输出设备（扬声器）
 
-外接扬声器能实现两个功能，分别为声音实现智能提醒和使用不同声音输出输出三种工作挡位。该功能通过连个模块协同实现，其中`mode_change`模块中输出mode和cleaning_reminder，
+外接扬声器能实现两个功能，分别为声音实现智能提醒和使用不同声音输出输出三种工作挡位。该功能通过连个模块协同实现，其中`mode_change`模块中输出`mode`和`cleaning_reminder`，
 
 ## 项目总结
 
