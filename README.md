@@ -277,7 +277,7 @@
 
 这段代码实现了一个时间调整模块，其主要功能是通过 `increase_key` 按键输入调整当前时间的小时和分钟，并通过数码管显示小时和分钟，用户可以在设置模式下调整智能提醒时间。
 
-![](https://github.com/renmiamu/CS207_Digital_Logic_Project/blob/master/photos/timer_setter.png)
+![](https://github.com/renmiamu/CS207_Digital_Logic_Project/blob/master/photos/time_setter.png)
 
 |   Port name    | Direction | Type  |     Description      |
 | :------------: | :-------: | :---: | :------------------: |
