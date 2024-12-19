@@ -193,7 +193,7 @@
 | long_press  |   input   |      |  长按信号   |
 | power_state |  output   | reg  |  电源信号   |
 
-![](C:\Users\ximgZ\Desktop\郑袭明大二\Digital Logic\project\CS207_digital_logic_project\photos\power_control.png)
+
 
 ### 子模块：timer_mode
 
