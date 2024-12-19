@@ -129,6 +129,8 @@
 
 这段代码实现了手势控制定时器模块，根据输入的时间选择信号（`tub_select`），设置不同的倒计时时间，并控制数码管显示相应的数字，同时通过`tub_select_gesture_time`信号选择数码管的显示。
 
+![gesture_power_control_timer](https://github.com/renmiamu/CS207_Digital_Logic_Project/blob/master/photos/gesture_power_control_timer.png)
+
 |         Port name         | Direction |  Type  |  Description   |
 | :-----------------------: | :-------: | :----: | :------------: |
 |           reset           |   input   |        |      重置      |
@@ -145,6 +147,8 @@
 这段代码实现了手势控制电源管理模块，根据左右键输入和倒计时状态切换不同的工作模式，通过控制倒计时和电源状态（开/关），以及与手势时间选择模块配合，更新数码管内容。
 
 内部实现了**子模块**`gesture_power_control_timer`，控制倒计时时间和数码管显示。
+
+![gesture_power_control](https://github.com/renmiamu/CS207_Digital_Logic_Project/blob/master/photos/gesture_power_control.png)
 
 |         Port name         | Direction | Type  |  Description   |
 | :-----------------------: | :-------: | :---: | :------------: |
@@ -163,6 +167,8 @@
 
 这段代码实现了一个按键按下检测模块，通过计数按键按下的持续时间，区分短按和长按事件，并根据按键输入生成相应的`short_press`和`long_press`信号。
 
+![key_press_detector](https://github.com/renmiamu/CS207_Digital_Logic_Project/blob/master/photos/key_press_detector.png)
+
 |  Port name  | Direction | Type | Description  |
 | :---------: | :-------: | :--: | :----------: |
 |    reset    |   input   |      |     重置     |
@@ -177,6 +183,8 @@
 
 这段代码实现了一个电源控制模块，通过检测短按和长按事件来切换电源状态（开/关）。在系统复位时，电源默认为关闭状态；短按事件会将电源打开，长按事件则会将电源关闭。
 
+![power_control](https://github.com/renmiamu/CS207_Digital_Logic_Project/blob/master/photos/power_control.png)
+
 |  Port name  | Direction | Type | Description |
 | :---------: | :-------: | :--: | :---------: |
 |    reset    |   input   |      |    重置     |
@@ -190,6 +198,8 @@
 ### 子模块：timer_mode
 
 这段代码实现了一个定时器模块，能够显示并设置当前时间（小时、分钟、秒），并支持通过按键调整时间，同时动态扫描数码管显示和处理按键去抖及持续按键逻辑。
+
+![timer_mode](https://github.com/renmiamu/CS207_Digital_Logic_Project/blob/master/photos/timer_mode.png)
 
 |   Port name    | Direction | Type  |     Description      |
 | :------------: | :-------: | :---: | :------------------: |
@@ -208,6 +218,8 @@
 ### 子模块：light
 
 这段代码实现了一个灯光控制模块，通过检测light_key按键的状态变化，控制灯光的开关（light_state）,并根据电源状态（power_state）判断是否允许控制灯光。
+
+![light](https://github.com/renmiamu/CS207_Digital_Logic_Project/blob/master/photos/light.png)
 
 |  Port name  | Direction | Type | Description |
 | :---------: | :-------: | :--: | :---------: |
