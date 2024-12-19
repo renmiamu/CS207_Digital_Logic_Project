@@ -99,13 +99,19 @@
 
 ## 系统结构说明
 
+**各子模块与顶层模块的关系如下图**：
+
+![Schematic](https://github.com/renmiamu/CS207_Digital_Logic_Project/blob/master/photos/Schematic1.png)
+
 **本项目的结构可由下面的流程图说明，其中，每个模块的功能在后面的子模块功能说明中有详细的介绍。**
+
+![sequence](https://github.com/renmiamu/CS207_Digital_Logic_Project/blob/master/photos/sequence.png)
+
+**对该系统结构的文字介绍如下**：
 
 ## 子模块功能说明
 
 ### 顶层模块：main
-
-![Schematic](https://github.com/renmiamu/CS207_Digital_Logic_Project/blob/master/photos/Schematic1.png)
 
 ![Schematic2](https://github.com/renmiamu/CS207_Digital_Logic_Project/blob/master/photos/Schematic2.png)
 
