@@ -1,5 +1,7 @@
 # CS207 2024 Fall Project：Kitchen Exhaust Hood
 
+> 本项目文档整体框架以及格式参考了 [Charley-xiao/No-Genshin: No Genshin Minipiano (github.com)](https://github.com/Charley-xiao/No-Genshin)
+
 **小组成员**：沈泓立、郑袭明、刘安钊
 
 ## 开发日程安排和实施情况
