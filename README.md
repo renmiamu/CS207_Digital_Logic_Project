@@ -1,4 +1,4 @@
-# CS207 2024 Fall Project：Kitchen Exhaust Hood
+# CS207 2024 Fall Project：Kitchen Exhaust Hood (final score: 109.7)
 
 > 本项目文档整体框架以及格式参考了 [Charley-xiao/No-Genshin: No Genshin Minipiano (github.com)](https://github.com/Charley-xiao/No-Genshin)
 
