@@ -2,7 +2,7 @@
 
 > 本项目文档整体框架以及格式参考了 [Charley-xiao/No-Genshin: No Genshin Minipiano (github.com)](https://github.com/Charley-xiao/No-Genshin)
 
-**项目得分**: 109.7
+**项目得分**: 109.7/100
 
 **小组成员**：沈泓立、郑袭明、刘安钊
 
